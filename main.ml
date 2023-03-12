@@ -79,20 +79,23 @@ module Sexp = struct
 			let (start_byte, end_byte, s) = parse_range s in
 
 			let make_children (s : S.t) : ((string * t) list * S.t) =
-				let rec aux s field lst =
+				(* Makes it easier to cons onto a list in a tuple *)
+				let (>>) a (lst, s) = (a::lst, s) in
+
+				let rec aux s field =
 					let s = skip_ws s in
 					match S.uncons s with
 					| Some ('(', _) -> (* anon child *)
 						let (child, tail) = make_sexp s in
-						aux tail "" ((field, child)::lst)
+						(field, child) >> (aux tail "")
 					| Some (')', tail) -> (* end *)
-						(lst, tail)
+						([], tail)
 					| Some _ -> (* field *)
 						let (field', tail) = parse_field s in
-						aux tail field' lst
+						aux tail field'
 					| None -> assert false (* invalid *)
 				in
-				aux s "" []
+				aux s ""
 			in
 
 			make_children s |> fun (children, s) ->
